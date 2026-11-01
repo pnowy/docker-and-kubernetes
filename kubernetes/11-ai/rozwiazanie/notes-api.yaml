@@ -1,0 +1,115 @@
+# Poprawiona wersja wygenerowany/notes-api.yaml: stabilne API, porty i sondy aplikacji, hasło z Secretu, zasoby,
+# securityContext. Oparta na ćwiczeniu sekcji 5 (namespace notes, Secret notes-db, baza notes-db).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: notes-config
+  namespace: notes
+data:
+  APP_VERSION: "1.1.0"
+  STORAGE: postgres
+  PGHOST: notes-db
+  PGDATABASE: notes
+  PGUSER: notes
+  PGPASSWORD_FILE: /run/secrets/db/password
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notes-api
+  namespace: notes
+  annotations:
+    kubernetes.io/change-cause: "notes-api 1.1.0 + securityContext"
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: notes-api
+  template:
+    metadata:
+      labels:
+        app: notes-api
+    spec:
+      securityContext:
+        runAsNonRoot: true       # obraz notes-api działa jako użytkownik node (UID 1000)
+        runAsUser: 1000
+      initContainers:
+      - name: czekaj-na-baze     # kontener główny startuje dopiero, gdy ten zakończy się sukcesem
+        image: postgres:18
+        command: ["sh", "-c", "until pg_isready -h notes-db -U notes; do echo czekam na bazę; sleep 2; done"]
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+        resources:
+          requests: { cpu: 10m, memory: 16Mi }
+          limits: { cpu: 100m, memory: 64Mi }
+      containers:
+      - name: api
+        image: notes-api:1.1.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 3000
+        envFrom:
+        - configMapRef:
+            name: notes-config
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 3000
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 3000
+          periodSeconds: 10
+        resources:
+          requests: { cpu: 50m, memory: 64Mi }
+          limits: { cpu: 500m, memory: 256Mi }
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true   # przy STORAGE=postgres aplikacja nic nie zapisuje na dysku
+          capabilities:
+            drop: ["ALL"]
+        volumeMounts:
+        - name: db-secret
+          mountPath: /run/secrets/db
+          readOnly: true
+      volumes:
+      - name: db-secret
+        secret:
+          secretName: notes-db
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notes-api
+  namespace: notes
+spec:
+  selector:
+    app: notes-api
+  ports:
+  - port: 80
+    targetPort: 3000
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: notes-api
+  namespace: notes
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: notes.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: notes-api
+            port: { number: 80 }

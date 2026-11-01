@@ -1,0 +1,11 @@
+# Serwis wybiera tylko wspólną etykietę "app" – ruch dzieli się proporcjonalnie do liczby replik
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-canary-demo
+spec:
+  selector:
+    app: nginx-canary-demo
+  ports:
+  - port: 80
+    targetPort: 80

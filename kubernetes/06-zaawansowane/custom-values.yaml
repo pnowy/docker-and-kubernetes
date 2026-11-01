@@ -1,0 +1,10 @@
+# Nadpisanie domyślnych wartości Chartu utworzonego przez "helm create moja-aplikacja"
+replicaCount: 2
+
+image:
+  repository: nginx
+  tag: "1.29"
+
+service:
+  type: NodePort
+  port: 80

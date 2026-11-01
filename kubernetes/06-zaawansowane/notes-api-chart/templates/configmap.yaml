@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-config
+  labels:
+    app.kubernetes.io/name: notes-api
+    app.kubernetes.io/instance: {{ .Release.Name }}
+data:
+  APP_VERSION: {{ .Values.image.tag | default .Chart.AppVersion | quote }}
+  STORAGE: {{ .Values.storage | quote }}
+  {{- if eq .Values.storage "postgres" }}
+  PGHOST: {{ .Values.postgres.host | quote }}
+  PGDATABASE: {{ .Values.postgres.database | quote }}
+  PGUSER: {{ .Values.postgres.user | quote }}
+  PGPASSWORD_FILE: /run/secrets/db/password
+  {{- end }}

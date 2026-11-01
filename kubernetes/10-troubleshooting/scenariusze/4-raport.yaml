@@ -1,0 +1,20 @@
+# Scenariusz 4: generator raportów nie mieści się w pamięci
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: raport
+  namespace: awarie
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: raport }
+  template:
+    metadata:
+      labels: { app: raport }
+    spec:
+      containers:
+      - name: raport
+        image: busybox:1.37
+        command: ["sh", "-c", "echo Generuję raport; head -c 100m /dev/zero | tr '\\0' x | sort > /dev/null; sleep 3600"]
+        resources:
+          limits: { memory: 32Mi }

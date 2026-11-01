@@ -1,0 +1,15 @@
+# Wersja 1 – najprostszy Dockerfile: działa, ale obraz jest duży
+# i zawiera kompilator TypeScript oraz zależności deweloperskie.
+# Celowo zła kolejność: COPY . . przed npm ci – każda zmiana w kodzie unieważnia cache
+# i zależności instalują się od nowa. Poprawiona kolejność: Dockerfile.cached.
+# docker build -t notes-api:json --build-arg STORAGE=json -f Dockerfile.simple .
+FROM node:24
+WORKDIR /app
+COPY . .
+RUN npm ci && npm run build
+# ARG istnieje tylko podczas budowania; ENV zapisuje wartość w obrazie, żeby aplikacja ją widziała.
+# Domyślnie PostgreSQL, "--build-arg STORAGE=json" – notatki w pliku, bez bazy danych.
+ARG STORAGE=postgres
+ENV STORAGE=${STORAGE}
+EXPOSE 3000
+CMD ["node", "dist/server.js"]

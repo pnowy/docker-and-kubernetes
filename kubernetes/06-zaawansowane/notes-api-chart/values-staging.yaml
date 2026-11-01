@@ -1,0 +1,4 @@
+# Nadpisanie dla drugiego środowiska: helm install ... -f values-staging.yaml
+replicaCount: 1
+ingress:
+  host: notes-staging.local

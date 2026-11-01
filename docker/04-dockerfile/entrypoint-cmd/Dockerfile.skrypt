@@ -1,0 +1,7 @@
+# ENTRYPOINT = skrypt startowy, CMD = właściwa aplikacja przekazana do skryptu jako "$@"
+# Wymaga obrazu notes-api:json – zbuduj go w ../../../app: docker build --build-arg STORAGE=json -t notes-api:json .
+FROM notes-api:json
+COPY --chmod=755 entrypoint.sh /usr/local/bin/entrypoint.sh
+ENTRYPOINT ["entrypoint.sh"]
+# ENTRYPOINT kasuje CMD odziedziczone z obrazu bazowego – trzeba je podać ponownie
+CMD ["node", "dist/server.js"]

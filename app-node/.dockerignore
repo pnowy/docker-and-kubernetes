@@ -1,0 +1,11 @@
+node_modules
+dist
+npm-debug.log
+.git
+.env
+secrets
+Dockerfile*
+compose*.yaml
+*.md
+*.sh
+data

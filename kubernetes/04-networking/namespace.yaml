@@ -1,0 +1,7 @@
+# Namespace dzieli klaster na przestrzenie nazw: ta sama nazwa Serwisu może istnieć w default i w staging
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: staging
+  labels:
+    env: staging

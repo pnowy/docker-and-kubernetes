@@ -1,0 +1,25 @@
+replicaCount: 2
+
+image:
+  repository: notes-api
+  tag: ""                 # pusty = appVersion z Chart.yaml
+  pullPolicy: IfNotPresent
+
+storage: json             # json albo postgres (wtedy uzupełnij sekcję postgres)
+postgres:
+  host: notes-db
+  database: notes
+  user: notes
+  passwordSecret: notes-db   # Secret z kluczem "password"
+
+service:
+  port: 80
+
+ingress:
+  enabled: true
+  className: nginx
+  host: notes-helm.local
+
+resources:
+  requests: { cpu: 50m, memory: 64Mi }
+  limits: { cpu: 500m, memory: 256Mi }

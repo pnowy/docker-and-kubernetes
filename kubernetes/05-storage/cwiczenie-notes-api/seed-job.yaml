@@ -1,0 +1,30 @@
+# ★ Job: jednorazowe wstawienie notatek startowych bezpośrednio do bazy
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: notes-seed
+  namespace: notes
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        app: notes-seed          # etykieta wpuszczana przez network-policy-db.yaml
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: seed
+        image: postgres:18
+        env:
+        - name: PGHOST
+          value: notes-db
+        - name: PGUSER
+          value: notes
+        - name: PGDATABASE
+          value: notes
+        - name: PGPASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: notes-db
+              key: password
+        command: ["psql", "-c", "INSERT INTO notes (text) VALUES ('Notatka z Joba notes-seed')"]

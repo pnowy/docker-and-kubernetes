@@ -1,0 +1,36 @@
+# ★ Konto dla pipeline'u CI: aktualizuje Deploymenty w namespace notes, widzi Pody i ich logi, nie czyta Secretów
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ci-deployer
+  namespace: notes
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: deployer
+  namespace: notes
+rules:
+- apiGroups: ["apps"]                    # Deployment i ReplicaSet są w grupie apps, nie w ""
+  resources: ["deployments"]
+  verbs: ["get", "list", "watch", "patch", "update"]
+- apiGroups: ["apps"]
+  resources: ["replicasets"]             # kubectl rollout status/history czyta ReplicaSety
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["pods", "pods/log"]
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ci-deployer
+  namespace: notes
+subjects:
+- kind: ServiceAccount
+  name: ci-deployer
+  namespace: notes
+roleRef:
+  kind: Role
+  name: deployer
+  apiGroup: rbac.authorization.k8s.io

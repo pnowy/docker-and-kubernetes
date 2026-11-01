@@ -1,0 +1,30 @@
+# Scenariusz 6: archiwum nie dostaje dysku
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: archiwum
+  namespace: awarie
+spec:
+  storageClassName: szybki-ssd
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: archiwum
+  namespace: awarie
+spec:
+  containers:
+  - name: archiwum
+    image: busybox:1.37
+    command: ["sleep", "3600"]
+    volumeMounts:
+    - name: dane
+      mountPath: /dane
+  volumes:
+  - name: dane
+    persistentVolumeClaim:
+      claimName: archiwum

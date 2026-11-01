@@ -1,0 +1,23 @@
+# Sekcja 13 – przykład z materiałów ALX: zmienne z .env, healthcheck i depends_on z warunkiem
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      retries: 5
+
+  app:
+    # aplikacja FastAPI z sekcji 10, otagowana wersją z pliku .env
+    build: ../10-multi-stage/fastapi
+    image: myapp:${APP_VERSION}
+    environment:
+      APP_VERSION: ${APP_VERSION}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy  # czeka na zdrowe db, nie tylko uruchomione

@@ -1,0 +1,18 @@
+# Scenariusz 3: worker uruchamia się i pada
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker
+  namespace: awarie
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: worker }
+  template:
+    metadata:
+      labels: { app: worker }
+    spec:
+      containers:
+      - name: worker
+        image: busybox:1.37
+        command: ["sh", "-c", "echo Start; test -n \"$QUEUE_URL\" || { echo 'Brak zmiennej QUEUE_URL'; exit 1; }; sleep 3600"]

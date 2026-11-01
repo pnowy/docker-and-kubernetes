@@ -1,0 +1,30 @@
+# Przykład z sekcji 8 materiałów ALX. Pole "version: '3.8'" pominięte – w Compose v2 jest przestarzałe (ostrzeżenie).
+# "build: ." z materiałów wskazuje katalog z Dockerfile – tu jest nim ../04-dockerfile (obraz Apache z sekcji 4).
+services:
+  web:
+    build: ../04-dockerfile
+    ports:
+      - "8080:80"
+    volumes:
+      - ./src:/var/www/html
+    depends_on:
+      - db
+    networks:
+      - app-network
+
+  db:
+    image: mariadb:10.6
+    environment:
+      MYSQL_ROOT_PASSWORD: sekret
+      MYSQL_DATABASE: myapp
+    volumes:
+      - db-data:/var/lib/mysql
+    networks:
+      - app-network
+
+volumes:
+  db-data:
+
+networks:
+  app-network:
+    driver: bridge

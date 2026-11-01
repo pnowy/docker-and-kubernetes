@@ -1,0 +1,8 @@
+# Nadpisania dla produkcji – scalane z docker-compose.yml
+services:
+  db:
+    restart: always
+  app:
+    restart: always
+    ports: !override
+      - "80:8000"

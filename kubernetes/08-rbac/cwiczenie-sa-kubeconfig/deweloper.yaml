@@ -1,0 +1,35 @@
+# ★ Konto deweloper z uprawnieniami edit, ale tylko w namespace zespol-a
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: zespol-a
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: deweloper
+  namespace: zespol-a
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: deweloper-edit
+  namespace: zespol-a
+subjects:
+- kind: ServiceAccount
+  name: deweloper
+  namespace: zespol-a
+roleRef:
+  kind: ClusterRole
+  name: edit
+  apiGroup: rbac.authorization.k8s.io
+---
+# Token bez terminu ważności – Kubernetes wypełnia data.token sam; unieważnisz go, usuwając ten Secret
+apiVersion: v1
+kind: Secret
+type: kubernetes.io/service-account-token
+metadata:
+  name: deweloper-token
+  namespace: zespol-a
+  annotations:
+    kubernetes.io/service-account.name: deweloper

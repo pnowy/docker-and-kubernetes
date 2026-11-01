@@ -1,0 +1,6 @@
+apiVersion: v2
+name: notes-api
+description: notes-api ze szkolenia ALX Docker + Kubernetes
+type: application
+version: 0.1.0        # wersja chartu
+appVersion: "1.1.0"   # wersja aplikacji – domyślny tag obrazu

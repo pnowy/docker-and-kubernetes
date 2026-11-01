@@ -1,0 +1,105 @@
+# ★ Pody z wieloma kontenerami: wspólny wolumin, init container, sidecar, command/args
+# 1. Dwa kontenery w jednym Podzie: generator pisze stronę do wspólnego emptyDir, nginx ją serwuje
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-wiele-kontenerow
+  labels:
+    app: pody-demo
+spec:
+  volumes:
+  - name: strona
+    emptyDir: {}             # żyje tyle co Pod, widzą go wszystkie kontenery, które go montują
+  containers:
+  - name: nginx
+    image: nginx:1.29
+    ports:
+    - containerPort: 80
+    volumeMounts:
+    - name: strona
+      mountPath: /usr/share/nginx/html
+  - name: generator
+    image: busybox:1.37
+    command: ["sh", "-c"]
+    args:
+    - while true; do echo "<h1>$(hostname) $(date +%T)</h1>" > /html/index.html; sleep 5; done
+    volumeMounts:
+    - name: strona
+      mountPath: /html
+---
+# 2. Init containers: uruchamiają się po kolei przed głównym kontenerem, każdy musi zakończyć się sukcesem
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-init
+  labels:
+    app: pody-demo
+spec:
+  volumes:
+  - name: konfiguracja
+    emptyDir: {}
+  initContainers:
+  - name: czekaj-na-baze     # Pod stoi w Init:0/2, dopóki DNS nie zna Serwisu baza (pełna nazwa – nslookup z busyboxa myli się na krótkiej)
+    image: busybox:1.37
+    command: ["sh", "-c", "until nslookup baza.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local > /dev/null; do echo 'czekam na Serwis baza'; sleep 2; done"]
+  - name: przygotuj-konfiguracje
+    image: busybox:1.37
+    command: ["sh", "-c", "echo 'DB_HOST=baza' > /konfiguracja/app.env"]
+    volumeMounts:
+    - name: konfiguracja
+      mountPath: /konfiguracja
+  containers:
+  - name: app
+    image: busybox:1.37
+    command: ["sh", "-c", "cat /konfiguracja/app.env; sleep 3600"]
+    volumeMounts:
+    - name: konfiguracja
+      mountPath: /konfiguracja
+---
+# 3. Sidecar: init container z restartPolicy: Always startuje przed aplikacją i działa razem z nią (K8s 1.33+)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-sidecar
+  labels:
+    app: pody-demo
+spec:
+  volumes:
+  - name: logi
+    emptyDir: {}
+  initContainers:
+  - name: logi-sidecar
+    image: busybox:1.37
+    restartPolicy: Always    # bez tej linii to zwykły init container i Pod czekałby na jego koniec w nieskończoność
+    command: ["sh", "-c", "tail -F /logi/access.log"]
+    volumeMounts:
+    - name: logi
+      mountPath: /logi
+  containers:
+  - name: nginx
+    image: nginx:1.29
+    volumeMounts:
+    - name: logi             # emptyDir przykrywa symlinki /var/log/nginx → stdout, logi trafiają do pliku
+      mountPath: /var/log/nginx
+---
+# 4. command nadpisuje ENTRYPOINT obrazu, args nadpisuje CMD; $(ZMIENNA) z env rozwija Kubernetes, nie powłoka
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-command-args
+  labels:
+    app: pody-demo
+spec:
+  restartPolicy: Never       # jednorazowe zadanie: po wypisaniu Pod ma status Completed
+  containers:
+  - name: powitanie
+    image: busybox:1.37
+    env:
+    - name: IMIE
+      value: Kubernetes
+    - name: POD
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.name
+    command: ["echo"]
+    args: ["Witaj,", "$(IMIE)!", "Pod:", "$(POD)", "$(NIEZNANA)"]

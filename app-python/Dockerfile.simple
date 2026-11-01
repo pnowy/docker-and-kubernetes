@@ -1,0 +1,13 @@
+# Wersja 1 – najprostszy Dockerfile: działa, ale pełny obraz python:3.12 waży ok. 1 GB
+# (kompilatory, nagłówki, narzędzia, których aplikacja w produkcji nie potrzebuje) – zmniejszymy go w sekcji 10.
+# docker build -t notes-api-python:json --build-arg STORAGE=json -f Dockerfile.simple .
+FROM python:3.12
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY src/ .
+# ARG istnieje tylko podczas budowania; ENV zapisuje wartość w obrazie. Domyślnie MariaDB, json – plik, bez bazy.
+ARG STORAGE=mariadb
+ENV STORAGE=${STORAGE}
+EXPOSE 8000
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

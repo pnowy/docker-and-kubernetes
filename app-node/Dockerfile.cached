@@ -1,0 +1,16 @@
+# Wersja 2 – Dockerfile.simple z kolejnością przyjazną dla cache buildera.
+# Najpierw pliki zależności i npm ci (zmieniają się rzadko), potem kod i kompilacja.
+# Zmiana w src/ przebudowuje tylko ostatnie warstwy – npm ci pochodzi z cache (CACHED).
+# Obraz nadal jest duży – mniejszy obraz: multi-stage w pliku Dockerfile (moduł 7).
+# docker build -t notes-api:cached -f Dockerfile.cached .
+FROM node:24
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY tsconfig.json ./
+COPY src/ src/
+RUN npm run build
+ARG STORAGE=postgres
+ENV STORAGE=${STORAGE}
+EXPOSE 3000
+CMD ["node", "dist/server.js"]

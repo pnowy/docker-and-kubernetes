@@ -1,0 +1,33 @@
+# deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  labels:
+    app: nginx
+  annotations:
+    kubernetes.io/change-cause: "nginx 1.28"   # opis rewizji w kubectl rollout history
+spec:
+  replicas: 3
+  # 3.3 Kontrola strategii aktualizacji
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1        # Max dodatkowych Podów ponad replicas
+      maxUnavailable: 0  # Max niedostępnych Podów w trakcie update
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.28
+        ports:
+        - containerPort: 80
+        resources:
+          requests: { memory: "64Mi", cpu: "100m" }
+          limits:   { memory: "128Mi", cpu: "200m" }

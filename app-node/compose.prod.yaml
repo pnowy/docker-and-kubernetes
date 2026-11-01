@@ -1,0 +1,42 @@
+# Nadpisanie na serwer: docker compose -f compose.yaml -f compose.prod.yaml up -d
+# Obraz zbudowany w CI, limity, rotacja logów, tylko-do-odczytu, sieć bazy bez dostępu z zewnątrz
+
+# Fragment wielokrotnego użytku: pole x-… Compose ignoruje, &logi to kotwica YAML
+x-logi: &logi
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  db:
+    restart: unless-stopped
+    logging: *logi
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    networks: [backend]
+
+  api:
+    # na serwerze nie budujemy – pobieramy obraz z rejestru (docker compose pull)
+    build: !reset null
+    image: ${REGISTRY:-localhost:5000}/notes-api:${APP_VERSION}
+    logging: *logi
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+    # port tylko na localhost – z zewnątrz ruch przychodzi przez reverse proxy
+    ports: !override
+      - "127.0.0.1:${APP_PORT}:3000"
+    networks: [frontend, backend]
+
+networks:
+  frontend:
+  backend:
+    internal: true   # brak wyjścia do internetu i publikowania portów

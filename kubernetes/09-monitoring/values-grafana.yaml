@@ -1,0 +1,8 @@
+# Wartości dla kube-prometheus-stack: Loki jako dodatkowe źródło danych w Grafanie
+grafana:
+  adminPassword: admin123       # hasło szkoleniowe (materiały ALX)
+  additionalDataSources:
+  - name: Loki
+    type: loki
+    url: http://loki.monitoring.svc:3100
+    access: proxy

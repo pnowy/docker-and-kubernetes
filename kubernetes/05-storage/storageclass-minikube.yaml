@@ -1,0 +1,20 @@
+# ★ Własna StorageClass w minikube: ten sam provisioner co domyślna "standard", ale PV zostaje po usunięciu PVC
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: zachowaj
+provisioner: k8s.io/minikube-hostpath
+reclaimPolicy: Retain
+volumeBindingMode: Immediate
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-zachowaj
+spec:
+  storageClassName: zachowaj
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi

@@ -1,0 +1,33 @@
+# ★ Domyślnie blokuj cały ruch przychodzący do Podów w namespace notes...
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: domyslnie-blokuj
+  namespace: notes
+spec:
+  podSelector: {}          # wszystkie Pody w namespace
+  policyTypes:
+  - Ingress
+---
+# ...i wpuść do notes-api tylko kontrolery ruchu: Ingress NGINX i Envoy Gateway (Gateway API)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: notes-api-z-kontrolerow
+  namespace: notes
+spec:
+  podSelector:
+    matchLabels:
+      app: notes-api
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - namespaceSelector:   # etykietę kubernetes.io/metadata.name ma każdy namespace
+        matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: In
+          values: [ingress-nginx, envoy-gateway-system]
+    ports:
+    - protocol: TCP
+      port: 3000           # port kontenera, nie Serwisu – polityka działa na adresach Podów

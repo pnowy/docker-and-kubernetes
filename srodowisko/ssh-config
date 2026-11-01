@@ -1,0 +1,28 @@
+# Wpisy do ~/.ssh/config na laptopie (Windows: %USERPROFILE%\.ssh\config).
+# Wpisz publiczny adres jump-boxa od prowadzącego zamiast <IP_jump-boxa>. Logowanie hasłem użytkownika kurs.
+
+Host alx-jumpbox
+  HostName <IP_jump-boxa>
+  User kurs
+  ServerAliveInterval 30
+  # Porty z jump-boxa na laptopie: kubectl port-forward … 8080:80 na jump-boksie → http://localhost:8080
+  LocalForward 8080 localhost:8080
+  LocalForward 3000 localhost:3000
+  LocalForward 8000 localhost:8000
+
+# Maszyny kubeadm są widoczne tylko z jump-boxa – połączenie przez jump-box (hasło jump-boxa, potem hasło maszyny)
+Host alx-cp
+  HostName 10.4.0.50
+Host alx-worker1
+  HostName 10.4.0.100
+Host alx-worker2
+  HostName 10.4.0.200
+Host alx-cp alx-worker1 alx-worker2
+  User kurs
+  ProxyJump alx-jumpbox
+
+# macOS/Linux: jedno podanie hasła na 4 h – kolejne ssh, scp i VS Code korzystają z otwartego połączenia (Windows tego nie obsługuje)
+Host alx-*
+  ControlMaster auto
+  ControlPath ~/.ssh/cm-%r@%h:%p
+  ControlPersist 4h

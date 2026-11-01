@@ -1,0 +1,63 @@
+# ★ PostgreSQL dla notes-api: headless Service + StatefulSet z PVC. Hasło: Secret notes-db (tworzony w rozwiazanie.sh)
+apiVersion: v1
+kind: Service
+metadata:
+  name: notes-db
+  namespace: notes
+spec:
+  clusterIP: None          # headless: DNS zwraca adresy Podów, notes-db-0.notes-db to stała nazwa Poda
+  selector:
+    app: notes-db
+  ports:
+  - port: 5432
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: notes-db
+  namespace: notes
+spec:
+  serviceName: notes-db
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notes-db
+  template:
+    metadata:
+      labels:
+        app: notes-db
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:18
+        env:
+        - name: POSTGRES_DB
+          value: notes
+        - name: POSTGRES_USER
+          value: notes
+        - name: POSTGRES_PASSWORD_FILE    # jak w compose.yaml z części Docker: hasło z pliku, nie ze zmiennej
+          value: /run/secrets/db/password
+        ports:
+        - containerPort: 5432
+        readinessProbe:
+          exec:
+            command: ["pg_isready", "-U", "notes", "-d", "notes"]
+          periodSeconds: 5
+        volumeMounts:
+        - name: db-data
+          mountPath: /var/lib/postgresql
+        - name: db-secret
+          mountPath: /run/secrets/db
+          readOnly: true
+      volumes:
+      - name: db-secret
+        secret:
+          secretName: notes-db
+  volumeClaimTemplates:
+  - metadata:
+      name: db-data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 1Gi

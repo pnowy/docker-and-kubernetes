@@ -1,0 +1,37 @@
+# Sekcja 8 – notes-api w Pythonie + MariaDB, w układzie przykładu z materiałów ALX (serwis z build + baza, wolumin, sieć).
+# docker compose up -d --build
+name: notes-python
+
+services:
+  api:
+    build: .                       # Dockerfile obok (multi-stage, omawiany w sekcji 10)
+    ports:
+      - "8000:8000"
+    environment:
+      DB_HOST: db                  # nazwa serwisu = nazwa DNS w sieci app-network
+      DB_NAME: notes
+      DB_USER: notes
+      DB_PASSWORD: haslo-szkoleniowe
+    depends_on:
+      - db
+    networks:
+      - app-network
+
+  db:
+    image: mariadb:11.8
+    environment:
+      MARIADB_ROOT_PASSWORD: sekret
+      MARIADB_DATABASE: notes
+      MARIADB_USER: notes
+      MARIADB_PASSWORD: haslo-szkoleniowe
+    volumes:
+      - db-data:/var/lib/mysql
+    networks:
+      - app-network
+
+volumes:
+  db-data:
+
+networks:
+  app-network:
+    driver: bridge

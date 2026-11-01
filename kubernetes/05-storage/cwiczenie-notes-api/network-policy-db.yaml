@@ -1,0 +1,22 @@
+# ★ Polityka "domyslnie-blokuj" z sekcji 4 obejmuje też bazę – wpuść do niej tylko notes-api i Job notes-seed
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: notes-db-z-api
+  namespace: notes
+spec:
+  podSelector:
+    matchLabels:
+      app: notes-db
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchExpressions:
+        - key: app
+          operator: In
+          values: [notes-api, notes-seed]
+    ports:
+    - protocol: TCP
+      port: 5432

@@ -1,0 +1,20 @@
+# Scenariusz 5: analityka czeka i czeka
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: analityka
+  namespace: awarie
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: analityka }
+  template:
+    metadata:
+      labels: { app: analityka }
+    spec:
+      containers:
+      - name: analityka
+        image: busybox:1.37
+        command: ["sleep", "3600"]
+        resources:
+          requests: { cpu: "16", memory: 64Mi }

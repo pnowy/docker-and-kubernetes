@@ -1,0 +1,46 @@
+#cloud-config
+#
+# Poprawka DNS dla Multipass na macOS (Apple Silicon).
+#
+# Brama NAT Multipass ogłasza się przez DHCP jako serwer DNS, ale macOS nie
+# uruchamia na niej resolvera – routing działa, a apt i docker pull kończą się
+# „Temporary failure resolving”. Ustawiamy publiczne DNS zamiast bramy.
+# https://canonical.com/multipass/docs/latest/how-to-guides/troubleshoot/troubleshoot-networking/#dns-problems
+#
+# resolvectl, nie „netplan apply”: restart sieci w trakcie cloud-init zawiesza
+# instalację pakietów i maszyna zostaje na zawsze w stanie „Starting”.
+#
+# Użycie:
+#   multipass launch 24.04 --name docker-demo --cpus 2 --memory 4G --disk 20G \
+#     --cloud-init multipass-mac-fix.yaml
+
+# dopisujemy do cloud-init Multipass zamiast nadpisywać jego klucze
+merge_how:
+  - name: list
+    settings: [append]
+  - name: dict
+    settings: [no_replace, recurse_list]
+
+# bootcmd działa przed instalacją pakietów przez Multipass; runcmd ponawia
+# ustawienie, bo dzierżawa DHCP przywraca martwy resolver; nazwa interfejsu
+# zależy od wersji Ubuntu (eth0 w 24.04, enp0s1 w 26.04), więc bierzemy ją z trasy domyślnej
+bootcmd:
+  - [sh, -c, "i=$(ip -o route show default | awk '{print $5; exit}'); resolvectl dns $i 1.1.1.1 8.8.8.8; resolvectl domain $i '~.' || true"]
+
+runcmd:
+  - [sh, -c, "i=$(ip -o route show default | awk '{print $5; exit}'); resolvectl dns $i 1.1.1.1 8.8.8.8; resolvectl domain $i '~.' || true"]
+
+# trwale po restarcie maszyny
+write_files:
+  - path: /etc/netplan/99-multipass-dns.yaml
+    permissions: '0600'
+    owner: root:root
+    content: |
+      network:
+        version: 2
+        ethernets:
+          default:
+            dhcp4-overrides:
+              use-dns: false
+            nameservers:
+              addresses: [1.1.1.1, 8.8.8.8]

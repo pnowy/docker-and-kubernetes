@@ -1,0 +1,31 @@
+# ★ Job: zadanie do skutku (backoffLimit ponowień); CronJob: Job według harmonogramu
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: jednorazowe
+spec:
+  backoffLimit: 2
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: zadanie
+        image: busybox:1.37
+        command: ["sh", "-c", "echo Start; sleep 5; echo Zadanie wykonane"]
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: co-minute
+spec:
+  schedule: "*/1 * * * *"
+  successfulJobsHistoryLimit: 2
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: zadanie
+            image: busybox:1.37
+            command: ["sh", "-c", "date; echo 'Kopia zapasowa (udawana)'"]

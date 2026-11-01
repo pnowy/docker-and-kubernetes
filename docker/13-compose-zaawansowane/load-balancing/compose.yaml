@@ -1,0 +1,40 @@
+name: lb
+
+# Baza i API z aplikacji przewodniej; api-repliki.yaml usuwa port hosta i ustawia 3 repliki
+include:
+  - path:
+      - ../../../app-node/compose.yaml
+      - api-repliki.yaml
+
+services:
+  nginx:
+    image: nginx:1.30-alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - api
+
+  haproxy:
+    image: haproxy:3.4-alpine
+    ports:
+      - "8085:80"
+      - "8404:8404" # strona statystyk
+    volumes:
+      - ./haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    depends_on:
+      - api
+
+  traefik:
+    image: traefik:v3.7
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+      - --api.insecure=true # dashboard na porcie 8080 kontenera – tylko w laboratorium
+    ports:
+      - "8088:80"
+      - "8089:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro

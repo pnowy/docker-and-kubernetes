@@ -1,0 +1,13 @@
+# Wymaga Podów z etykietą app=nginx (np. ../03-podstawowe-operacje/deployment.yaml)
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-service
+spec:
+  selector:
+    app: nginx          # Wybiera Pody z tą etykietą
+  ports:
+  - protocol: TCP
+    port: 80            # Port Serwisu
+    targetPort: 80      # Port kontenera
+  type: ClusterIP

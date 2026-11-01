@@ -1,0 +1,16 @@
+# Nadpisania dla developmentu: docker compose -f compose.yaml -f compose.dev.yaml watch
+services:
+  api:
+    build:
+      target: dev
+    image: notes-api:dev
+    develop:
+      watch:
+        # zmiana w src/ – kopiujemy plik do kontenera i restartujemy kontener;
+        # samo "sync" + node --watch reaguje tylko na pierwszą zmianę (sync podmienia plik, fs.watch go gubi)
+        - action: sync+restart
+          path: ./src
+          target: /app/src
+        # zmiana zależności – przebudowa obrazu
+        - action: rebuild
+          path: package.json

@@ -1,0 +1,9 @@
+# ENTRYPOINT – stały program; CMD – domyślne argumenty, które "docker run obraz <argumenty>" zastępuje
+FROM ubuntu:24.04
+ENTRYPOINT ["echo", "Witaj,"]
+CMD ["świecie"]
+
+# docker run --rm demo-entrypoint                                   # Witaj, świecie
+# docker run --rm demo-entrypoint ALX                               # Witaj, ALX
+# docker run --rm --entrypoint echo demo-entrypoint                 # pusta linia – --entrypoint kasuje też CMD z obrazu
+# docker run --rm --entrypoint echo demo-entrypoint Hello, world    # Hello, world – argumenty podajesz sam

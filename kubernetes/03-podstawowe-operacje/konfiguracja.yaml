@@ -1,0 +1,56 @@
+# ★ ConfigMap i Secret: ta sama konfiguracja jako zmienne środowiskowe i jako pliki
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+data:
+  APP_MODE: szkolenie
+  LOG_LEVEL: info
+  app.properties: |
+    kolor=niebieski
+    limit=10
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: app-secret
+type: Opaque
+stringData:            # stringData = zwykły tekst; API zapisuje go jako base64 w polu data
+  DB_PASSWORD: sekret-szkoleniowy
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: konfiguracja-demo
+spec:
+  containers:
+  - name: app
+    image: busybox:1.37
+    command: ["sh", "-c", "env | grep -E 'APP_|LOG_|DB_'; cat /config/app.properties; ls /secret; sleep 3600"]
+    envFrom:
+    - configMapRef:
+        name: app-config
+    env:
+    - name: ENV
+      value: szkolenie
+    - name: DB_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: app-secret
+          key: DB_PASSWORD
+    volumeMounts:
+    - name: config
+      mountPath: /config
+    - name: secret
+      mountPath: /secret
+      readOnly: true
+  volumes:
+  - name: config
+    configMap:
+      name: app-config
+      items:
+      - key: app.properties
+        path: app.properties
+  - name: secret
+    secret:
+      secretName: app-secret

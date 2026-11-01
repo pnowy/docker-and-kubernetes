@@ -1,0 +1,6 @@
+notes-api {{ .Values.image.tag | default .Chart.AppVersion }} ({{ .Values.replicaCount }} repliki, storage: {{ .Values.storage }})
+{{- if .Values.ingress.enabled }}
+Test: curl -H "Host: {{ .Values.ingress.host }}" http://$(minikube ip)/
+{{- else }}
+Test: kubectl -n {{ .Release.Namespace }} port-forward svc/{{ .Release.Name }} 8000:{{ .Values.service.port }}
+{{- end }}

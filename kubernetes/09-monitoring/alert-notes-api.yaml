@@ -1,0 +1,19 @@
+# ★ Własna reguła alertu: notes-api ma niedostępne repliki dłużej niż minutę
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: notes-api
+  namespace: monitoring
+  labels:
+    release: monitoring        # Prometheus z kube-prometheus-stack wczytuje tylko reguły z etykietą swojego release'u
+spec:
+  groups:
+  - name: notes-api
+    rules:
+    - alert: NotesApiNiedostepneRepliki
+      expr: kube_deployment_status_replicas_unavailable{namespace="notes", deployment="notes-api"} > 0
+      for: 1m
+      labels:
+        severity: warning
+      annotations:
+        summary: "notes-api: {{ $value }} niedostępnych replik"

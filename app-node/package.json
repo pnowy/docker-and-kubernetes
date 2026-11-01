@@ -1,0 +1,26 @@
+{
+  "name": "notes-api",
+  "version": "1.0.0",
+  "description": "Proste API notatek (Node.js + TypeScript + Express + PostgreSQL) – aplikacja przewodnia szkolenia Docker + Kubernetes",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "node --watch src/server.ts",
+    "dev-json": "STORAGE=json node --watch src/server.ts"
+  },
+  "dependencies": {
+    "express": "5.3.0",
+    "pg": "8.23.1"
+  },
+  "devDependencies": {
+    "@types/express": "5.0.6",
+    "@types/node": "24.19.2",
+    "@types/pg": "8.23.1",
+    "typescript": "7.0.2"
+  }
+}

@@ -1,0 +1,97 @@
+# Pipeline CI dla notes-api: build checks → build → skan → push do GHCR → podpis cosign (keyless)
+# W repozytorium aplikacji plik leży w .github/workflows/docker.yml, a Dockerfile w katalogu głównym.
+name: docker
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*.*.*"]
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  IMAGE: ghcr.io/${{ github.repository }}
+
+jobs:
+  obraz:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write   # push do GHCR tokenem GITHUB_TOKEN
+      id-token: write   # token OIDC dla cosign keyless
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: docker/setup-qemu-action@v4     # emulacja arm64 na runnerze amd64
+      - uses: docker/setup-buildx-action@v4
+
+      # Szybka bramka: build checks BuildKit (kończy job błędem przy ostrzeżeniach)
+      - name: Build checks
+        uses: docker/build-push-action@v7
+        with:
+          call: check
+
+      - name: Logowanie do GHCR
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Tagi z gita: v1.2.3 → 1.2.3, 1.2, 1; main → main i sha-<commit>; PR → pr-<numer>
+      - id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.IMAGE }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha
+
+      # Obraz do skanowania – tylko amd64, ładowany do lokalnego Dockera runnera
+      - name: Build (do skanu)
+        uses: docker/build-push-action@v7
+        with:
+          load: true
+          tags: notes-api:skan
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Skan podatności (bramka na CRITICAL/HIGH)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: notes-api:skan
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: "1"
+
+      - name: Build i push (amd64 + arm64, SBOM, provenance)
+        id: build
+        uses: docker/build-push-action@v7
+        with:
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          annotations: ${{ steps.meta.outputs.annotations }}
+          cache-from: type=gha
+          sbom: true
+          provenance: mode=max
+
+      - uses: sigstore/cosign-installer@v4
+        if: github.event_name != 'pull_request'
+
+      # Podpis po digeście, nie po tagu – tag można przesunąć, digest nie
+      - name: Podpis cosign (keyless, tożsamość z OIDC GitHub Actions)
+        if: github.event_name != 'pull_request'
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: cosign sign --yes "${IMAGE}@${DIGEST}"

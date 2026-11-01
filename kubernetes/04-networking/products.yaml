@@ -1,0 +1,41 @@
+# Wymaga namespace staging (namespace.yaml). Serwis products w staging – klient z default woła go po nazwie products.staging
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: httpbin
+  namespace: staging
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: httpbin
+  template:
+    metadata:
+      labels:
+        app: httpbin
+    spec:
+      containers:
+      - name: httpbin
+        image: mccutchen/go-httpbin:2.26.0
+        ports:
+        - containerPort: 8080
+        env:
+        - name: USE_REAL_HOSTNAME   # /hostname zwraca nazwę Poda – widać, która replika odpowiedziała
+          value: "true"
+        readinessProbe:
+          httpGet: { path: /status/200, port: 8080 }
+        resources:
+          requests: { memory: "32Mi", cpu: "50m" }
+          limits:   { memory: "64Mi", cpu: "100m" }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: products
+  namespace: staging
+spec:
+  selector:
+    app: httpbin
+  ports:
+  - port: 80
+    targetPort: 8080

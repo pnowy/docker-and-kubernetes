@@ -1,0 +1,19 @@
+# Port 80 zamiast 8080 z materiałów – backend z ćwiczenia (httpd) nasłuchuje na 80
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: zezwol-tylko-frontend
+spec:
+  podSelector:
+    matchLabels:
+      app: backend
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: frontend
+    ports:
+    - protocol: TCP
+      port: 80
